@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Domain Stats</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Domain Registration Stats</h1>
+
+    <!-- Tab Buttons -->
+    <div class="tab-buttons">
+      <button onclick="showTab('graph')">📈 Graph</button>
+      <button onclick="showTab('perDay')">📅 Per Day</button>
+      <button onclick="showTab('tldDist')">🌐 TLD Distribution</button>
+      <button onclick="showTab('tldPerDay')">📊 TLD Per Day</button>
+    </div>
+
+    <!-- Graph Tab -->
+    <div id="tab-graph" class="tab-content active">
+      <div class="graph-container">
+        <canvas id="domainGraph"></canvas>
+      </div>
+    </div>
+
+    <!-- Per Day Tab -->
+    <div id="tab-perDay" class="tab-content">
+      <h3>Total Domains by Day</h3>
+      <table class="domain-table">
+        <thead>
+          <tr><th>Date</th><th>Domains Count</th></tr>
+        </thead>
+        <tbody>
+          <% Object.keys(perDayCounts).forEach(date => { %>
+            <tr>
+              <td><%= date %></td>
+              <td><%= perDayCounts[date] %> domains</td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TLD Distribution Tab -->
+    <div id="tab-tldDist" class="tab-content">
+      <h3>TLD Distribution</h3>
+      <table class="domain-table">
+        <thead>
+          <tr><th>TLD</th><th>Domains Count</th></tr>
+        </thead>
+        <tbody>
+          <% Object.keys(tldCounts).forEach(tld => { %>
+            <tr>
+              <td><%= tld %></td>
+              <td><%= tldCounts[tld] %> domains</td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TLD Per Day Tab -->
+    <div id="tab-tldPerDay" class="tab-content">
+      <h3>TLD Per Day</h3>
+      <table class="domain-table">
+        <thead>
+          <tr><th>Date</th><th>TLD</th><th>Domains Count</th></tr>
+        </thead>
+        <tbody>
+          <% Object.keys(tldPerDay).forEach(date => { %>
+            <% Object.keys(tldPerDay[date]).forEach(tld => { %>
+              <tr>
+                <td><%= date %></td>
+                <td><%= tld %></td>
+                <td><%= tldPerDay[date][tld] %> domains</td>
+              </tr>
+            <% }) %>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Graph Script -->
+  <script>
+    const ctx = document.getElementById('domainGraph').getContext('2d');
+    const labels = <%- JSON.stringify(Object.keys(perDayCounts)) %>;
+    const data = <%- JSON.stringify(Object.values(perDayCounts)) %>;
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Domains Registered Per Day',
+          data: data,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.2)',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#10b981',
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 10
+            }
+          },
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  </script>
+
+  <!-- Tab Script -->
+  <script>
+    function showTab(tabId) {
+      const tabs = document.querySelectorAll('.tab-content');
+      tabs.forEach(tab => tab.classList.remove('active'));
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+    }
+  </script>
+</body>
+</html>
+

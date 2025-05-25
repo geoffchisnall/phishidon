@@ -1,0 +1,26 @@
+services:
+  trawler:
+    build:
+      context: ./trawler
+    container_name: trawler
+    env_file:
+      - .env
+    environment:
+      - TZ=Africa/Johannesburg
+
+
+  web:
+    build:
+      context: ./webui
+    container_name: web
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./webui/gowitness-shots:/usr/src/app/gowitness-shots
+    environment:
+      - TZ=Africa/Johannesburg
+    depends_on:
+      - trawler
+

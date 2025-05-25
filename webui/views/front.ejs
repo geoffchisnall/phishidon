@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Domain Registration Dashboard</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .nav-buttons a {
+      padding: 5px 5px;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .nav-buttons a:hover {
+      background-color: #0056b3;
+    }
+
+    .graph-container {
+      height: 400px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <!-- Flex container for heading + logo -->
+  <div class="header-row">
+    <h1>📊 Domain Registration Monitoring</h1>
+ <!--  <img src="/deepphish_logo.png" alt="Logo" class="top-logo"> -->
+  </div>
+
+  <!-- Navigation Buttons -->
+  <div class="nav-buttons">
+    <a href="/search">🔍 Search</a>
+    <a href="/stats">📈 Stats</a>
+    <a href="/subfinder_lookup">🕵♂ Subfinder Lookup</a>
+  </div>
+    <!-- Chart -->
+    <div class="graph-container">
+      <canvas id="domainGraph"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Chart Script -->
+  <script>
+    const ctx = document.getElementById('domainGraph').getContext('2d');
+
+    const labels = <%- JSON.stringify(Object.keys(perDayCounts)) %>;
+    const data = <%- JSON.stringify(Object.values(perDayCounts)) %>;
+
+    // Mark weekends with a different color
+    const getBackgroundColors = (labels) => {
+      return labels.map(label => {
+        const date = new Date(label);
+        const day = date.getDay(); // 0 = Sunday, 6 = Saturday
+        return (day === 0 || day === 6) ? 'rgba(255, 99, 132, 0.2)' : 'rgba(52, 152, 219, 0.2)';
+      });
+    };
+
+    const getBorderColors = (labels) => {
+      return labels.map(label => {
+        const date = new Date(label);
+        const day = date.getDay();
+        return (day === 0 || day === 6) ? '#ff6384' : '#3498db';
+      });
+    };
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Domains Registered Per Day',
+          data: data,
+          backgroundColor: getBackgroundColors(labels),
+          borderColor: getBorderColors(labels),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+

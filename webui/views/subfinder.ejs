@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Subfinder Results for <%= domain %></title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .screenshots {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .shot-card {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 10px;
+      background: #f9f9f9;
+    }
+
+    .shot-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+      cursor: zoom-in;
+    }
+
+    .shot-card a {
+      display: block;
+      margin-top: 10px;
+      color: #007bff;
+      word-break: break-word;
+    }
+
+    .shot-card a:hover {
+      text-decoration: underline;
+    }
+
+    .back-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+    }
+
+    .back-button:hover {
+      background-color: #0056b3;
+    }
+
+    /* Modal styles */
+    #imageModal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+    }
+
+    #imageModal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 10px;
+    }
+
+    #imageModal span {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: white;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+	<h1>Subfinder Results for: <%= domain %></h1>
+<p><strong><%= screenshots.length %></strong> screenshot(s) found.</p>
+
+  <a class="back-button" href="/">⬅ Back</a>
+
+  <% if (screenshots.length === 0) { %>
+    <p>No screenshots available.</p>
+  <% } else { %>
+    <div class="screenshots">
+      <% screenshots.forEach(({ url, screenshot }) => { %>
+        <div class="shot-card">
+          <img src="<%= screenshot %>" alt="Screenshot of <%= url %>" onclick="openModal('<%= screenshot %>')">
+          <a href="<%= url %>" target="_blank">🔗 Visit <%= url %></a>
+          <a href="<%= screenshot %>" target="_blank">🖼 View Screenshot File</a>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <!-- Modal for enlarged image -->
+  <div id="imageModal">
+    <span onclick="closeModal()">&times;</span>
+    <img id="modalImage" src="">
+  </div>
+
+  <script>
+    function openModal(src) {
+      document.getElementById("modalImage").src = src;
+      document.getElementById("imageModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("imageModal").style.display = "none";
+    }
+  </script>
+
+</body>
+</html>
+

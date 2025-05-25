@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Subfinder Lookup</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    .form-container {
+      max-width: 500px;
+      margin: auto;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      padding: 12px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #loadingBar {
+      width: 100%;
+      background-color: #f3f3f3;
+      border-radius: 6px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #loadingBar > div {
+      width: 0;
+      height: 20px;
+      background-color: #007bff;
+      border-radius: 6px;
+      animation: loading 2s linear infinite;
+    }
+
+    @keyframes loading {
+      0% { width: 0; }
+      50% { width: 80%; }
+      100% { width: 100%; }
+    }
+
+    .nav {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: #007bff;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Subdomain Screenshot Lookup</h2>
+
+    <form id="subfinderForm">
+      <label for="domain">Domain:</label>
+      <input type="text" id="domain" name="domain" required placeholder="example.com">
+
+      <label for="path">Optional Path for httpx (default: index.html):</label>
+      <input type="text" id="path" name="path" placeholder="index.html">
+
+      <button type="submit">Scan</button>
+    </form>
+
+    <div id="loadingBar"><div></div></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("subfinderForm");
+    const loadingBar = document.getElementById("loadingBar");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const domain = document.getElementById("domain").value.trim();
+      const path = document.getElementById("path").value.trim();
+
+      if (!domain) {
+        alert("Please enter a domain.");
+        return;
+      }
+
+      loadingBar.style.display = "block";
+
+      // Redirect to /subfinder/:domain?path=...
+      const encodedDomain = encodeURIComponent(domain);
+      const encodedPath = encodeURIComponent(path || "index.html");
+      window.location.href = `/subfinder/${encodedDomain}?path=${encodedPath}`;
+    });
+  </script>
+</body>
+</html>
+

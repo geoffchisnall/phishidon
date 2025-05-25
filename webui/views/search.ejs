@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Domain Search</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Search for Domains</h1>
+
+    <form action="/search" method="get" class="search-form">
+      <label for="domain">Domain:</label>
+      <input id="domain" type="text" name="domain" value="<%= domain %>" placeholder="Search domain" />
+      <button type="submit">Search</button>
+    </form>
+
+    <% if (results.length > 0) { %>
+      <table class="domain-table">
+        <thead>
+          <tr>
+            <th>🌐 Domain</th>
+            <th>⏰ Registered On</th>
+            <th>🛠 Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% results.forEach(domain => { %>
+            <tr>
+              <td><%= domain.domain %></td>
+              <td><%= moment.unix(domain.timestamp).format('YYYY-MM-DD HH:mm:ss') %></td>
+              <td>
+                <button class="whois-button" onclick="getWhois('<%= domain.domain %>')">📄 WHOIS Info</button>
+                <button class="whois-button" onclick="getScreenshot('<%= domain.domain %>')">🖼 gowitness</button>
+                <button class="whois-button" onclick="window.open('/details/<%= domain.domain %>', '_blank')">ℹ️ Details</button>
+              </td>
+            </tr>
+
+            <tr id="whois-<%= domain.domain %>" style="display: none;">
+              <td colspan="3">
+                <pre id="whois-output-<%= domain.domain %>"></pre>
+              </td>
+            </tr>
+
+            <tr id="screenshot-<%= domain.domain %>" style="display: none;">
+              <td colspan="3">
+                <div class="screenshot-container">
+                  <div class="screenshot-box">
+                    <h3><strong>Old Screenshot</strong></h3>
+                    <img id="screenshot-old-<%= domain.domain %>" src="" alt="Old Screenshot" onclick="openModal(this.src)">
+                    <div id="timestamp-old-<%= domain.domain %>" class="screenshot-timestamp"></div>
+                  </div>
+                  <div class="screenshot-box">
+                    <h3><strong>New Screenshot</strong></h3>
+                    <img id="screenshot-new-<%= domain.domain %>" src="" alt="New Screenshot" onclick="openModal(this.src)">
+                    <div id="timestamp-new-<%= domain.domain %>" class="screenshot-timestamp"></div>
+                    <button class="whois-button" onclick="getNewScreenshot('<%= domain.domain %>')">Get New Screenshot</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>No domains found.</p>
+    <% } %>
+
+    <div class="summary">
+      <span>Total Domains: <%= totalDomains %></span> |
+      <span>Total Search Results: <%= totalSearchResults %></span> |
+      <span>Search Results Count: <%= searchResultsCount %></span>
+    </div>
+
+    <div class="pagination">
+      <% if (page > 1) { %>
+        <a href="/search?page=<%= page - 1 %>&domain=<%= domain %>">Previous</a>
+      <% } %>
+      <span>Page <%= page %> of <%= totalPages %></span>
+      <% if (page < totalPages) { %>
+        <a href="/search?page=<%= page + 1 %>&domain=<%= domain %>">Next</a>
+      <% } %>
+    </div>
+
+    <p><a href="/">⬅ Back to Home</a></p>
+  </div>
+
+  <!-- Modal -->
+  <div id="imageModal">
+    <span onclick="closeModal()">&times;</span>
+    <img id="modalImage" src="">
+  </div>
+
+  <script>
+    // Modal controls
+    function openModal(src) {
+      document.getElementById("modalImage").src = src;
+      document.getElementById("imageModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("imageModal").style.display = "none";
+    }
+
+    // Loading bar helper - runs a 15-second progress until fetch finishes
+    function startLoadingBar(bar, text, textId) {
+      let percent = 0;
+      bar.style.width = '0%';
+      text.textContent = textId.includes('whois') 
+        ? 'Loading WHOIS info...' 
+        : 'Loading screenshots...';
+
+      const interval = 150; // update every 150ms
+      const increment = 100 / (15000 / interval); // increment for ~15 seconds to reach 100%
+
+      const timer = setInterval(() => {
+        percent += increment;
+        if (percent > 99) percent = 99; // don't reach 100% until fetch completes
+        bar.style.width = percent + '%';
+      }, interval);
+
+      // Return a function to call when loading is done
+      return () => {
+        clearInterval(timer);
+        bar.style.width = '100%';
+        text.textContent = textId.includes('whois') 
+          ? 'WHOIS info loaded.' 
+          : 'Screenshots loaded.';
+      };
+    }
+
+    // WHOIS fetch with loading bar
+    function getWhois(domain) {
+      const infoRow = document.getElementById(`whois-${domain}`);
+      const output = document.getElementById(`whois-output-${domain}`);
+      infoRow.style.display = "table-row";
+
+      output.innerHTML = `
+        <div class="loading-bar"><div class="progress"></div><span>Loading WHOIS info...</span></div>
+      `;
+
+      const bar = output.querySelector('.progress');
+      const text = output.querySelector('span');
+      const finishLoading = startLoadingBar(bar, text, `whois-${domain}`);
+
+      fetch(`/whois/${domain}`)
+        .then(res => res.json())
+        .then(data => {
+          finishLoading();
+
+          output.textContent = `
+🌐 DOMAIN: ${data.domain || 'N/A'}
+📡 IP: ${data.ipv4 || 'N/A'}
+📦 ASN: ${data.asn || 'N/A'}
+📝 Registrar: ${data.registrar?.value || 'N/A'}
+📧 Registrar Abuse Email: ${data.registrarAbuseEmail?.value || 'N/A'}
+🏢 Hosting Provider: ${data.isp || 'N/A'}
+🛡 Hosting Abuse Email: ${data.hostingAbuseEmail?.value || 'N/A'}
+
+👤 Registrant Info:
+   - Name: ${data.registrant?.name || 'N/A'}
+   - Email: ${data.registrant?.email || 'N/A'}
+   - Org: ${data.registrant?.org || 'N/A'}
+   - Country: ${data.registrant?.country || 'N/A'}
+          `.trim();
+        })
+        .catch(err => {
+          finishLoading();
+          output.textContent = "Failed to fetch WHOIS info.";
+          console.error("[DEBUG] WHOIS fetch error:", err);
+        });
+    }
+
+    // Screenshot fetch with loading bar
+function getScreenshot(domain) {
+  const row = document.getElementById(`screenshot-${domain}`);
+  row.style.display = 'table-row';
+
+  // Insert loading bar at the top of the screenshot container
+  const container = row.querySelector('.screenshot-container');
+  // Remove any existing loading bar first to avoid duplicates
+  const existingBar = document.getElementById(`loading-bar-screenshot-${domain}`);
+  if (existingBar) existingBar.remove();
+
+  container.insertAdjacentHTML('afterbegin', `
+    <div class="loading-bar" id="loading-bar-screenshot-${domain}">
+      <div class="progress"></div>
+      <span>Loading screenshots...</span>
+    </div>
+  `);
+
+  const loadingBarContainer = document.getElementById(`loading-bar-screenshot-${domain}`);
+  const bar = loadingBarContainer.querySelector('.progress');
+  const text = loadingBarContainer.querySelector('span');
+  const finishLoading = startLoadingBar(bar, text, `screenshot-${domain}`);
+
+  fetch(`/screenshot/${domain}`)
+    .then(res => res.json())
+    .then(data => {
+      finishLoading();
+      // Remove loading bar after done
+      loadingBarContainer.remove();
+
+      const oldImg = document.getElementById(`screenshot-old-${domain}`);
+      const newImg = document.getElementById(`screenshot-new-${domain}`);
+      const oldTimestamp = document.getElementById(`timestamp-old-${domain}`);
+      const newTimestamp = document.getElementById(`timestamp-new-${domain}`);
+
+      oldImg.src = data.old || '';
+      newImg.src = data.current || '';
+      oldTimestamp.textContent = data.oldTimestamp ? `Captured: ${data.oldTimestamp}` : '';
+      newTimestamp.textContent = data.currentTimestamp ? `Captured: ${data.currentTimestamp}` : '';
+    })
+    .catch(err => {
+      finishLoading();
+      loadingBarContainer.remove();
+      alert('Failed to load screenshots');
+      console.error("[DEBUG] Screenshot fetch error:", err);
+    });
+}
+
+
+function getNewScreenshot(domain) {
+  const row = document.getElementById(`screenshot-${domain}`);
+  if (row) row.style.display = 'table-row';
+
+  const newImg = document.getElementById(`screenshot-new-${domain}`);
+  const container = newImg?.parentElement;
+
+  // Remove existing loading bar if any
+  const existingBar = document.getElementById(`loading-bar-new-screenshot-${domain}`);
+  if (existingBar) existingBar.remove();
+
+  // Insert loading bar ABOVE the new screenshot image
+  if (container && newImg) {
+    container.insertBefore(
+      createLoadingBar(domain),
+      newImg
+    );
+  }
+
+  // Start timer to remove loading bar after 15 seconds (gowitness delay)
+  setTimeout(() => {
+    const bar = document.getElementById(`loading-bar-new-screenshot-${domain}`);
+    if (bar) bar.remove();
+  }, 15000);
+
+  fetch(`/screenshot/${domain}?force=true`)
+    .then(res => res.json())
+    .then(data => {
+      const timestamp = Date.now();
+
+      const oldImg = document.getElementById(`screenshot-old-${domain}`);
+      const oldTime = document.getElementById(`timestamp-old-${domain}`);
+      const newTime = document.getElementById(`timestamp-new-${domain}`);
+
+      if (oldImg && oldTime) {
+        if (data.old) {
+          oldImg.src = `${data.old}?t=${timestamp}`;
+          oldTime.textContent = `Captured: ${data.oldTimestamp || 'Unknown'}`;
+        } else {
+          oldImg.src = '/404.jpg';
+          oldTime.textContent = 'Old screenshot not available.';
+        }
+      }
+
+      if (newImg && newTime) {
+        if (data.current) {
+          newImg.src = `${data.current}?t=${timestamp}`;
+          newTime.textContent = `Captured: ${data.currentTimestamp || 'Unknown'}`;
+        } else {
+          newImg.src = '/404.jpg';
+          newTime.textContent = 'Latest screenshot not available.';
+        }
+      }
+    })
+    .catch(err => {
+      console.error(`[DEBUG] Screenshot fetch error for ${domain}:`, err);
+      alert(`Failed to fetch screenshot for ${domain}`);
+    })
+    .finally(() => {
+      // Also remove loading bar after fetch finishes (in case fetch completes before 15s)
+      const bar = document.getElementById(`loading-bar-new-screenshot-${domain}`);
+      if (bar) bar.remove();
+    });
+}
+
+// Helper to create loading bar element
+function createLoadingBar(domain) {
+  const div = document.createElement('div');
+  div.id = `loading-bar-new-screenshot-${domain}`;
+  div.className = 'loading-bar mb-2 flex flex-col items-center';
+
+  const progress = document.createElement('div');
+  progress.className = 'progress h-2 bg-blue-500 rounded w-1/2 animate-pulse';
+
+  const text = document.createElement('span');
+  text.textContent = 'Loading new screenshot...';
+  text.className = 'text-sm text-gray-600 mt-1';
+
+  div.appendChild(progress);
+  div.appendChild(text);
+
+  return div;
+}
+
+
+  </script>
+</body>
+</html>
+
