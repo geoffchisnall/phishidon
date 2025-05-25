@@ -15,6 +15,7 @@ ___
 
 - mongo db
 - docker
+- need to allow Docker access to File Sharing for /home/user/projects/phishidon/webui/ to allow screenshots to be saved
 - configure the .env
  - example
 
