@@ -39,4 +39,7 @@ PORT=3000
 - add the technologies used
 - add what services are being used
 - add comments
+- incorporate the co.za domains
+- the "more details" page to add a lot of functionality there
+- subfinder to branch out for domains such as r2.dev, cloudns.nz, etc
 - too tired to think
