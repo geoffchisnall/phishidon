@@ -1,49 +1,57 @@
-# Use official Node.js image with build tools (debian based)
 FROM node:18-bullseye
 
-# Install Go (latest stable)
 ENV GO_VERSION=1.21.1
 
-RUN apt-get update && apt-get install -y wget git \
-  && wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz \
-  && rm -rf /usr/local/go \
-  && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz \
-  && rm go${GO_VERSION}.linux-amd64.tar.gz
+# Install prerequisites
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    gcc \
+    g++ \
+    libc6-dev \
+    make \
+    chromium \
+    tzdata
 
+# Detect system architecture and download correct Go binary
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+      x86_64) GOARCH=amd64 ;; \
+      aarch64) GOARCH=arm64 ;; \
+      *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac && \
+    wget https://go.dev/dl/go${GO_VERSION}.linux-${GOARCH}.tar.gz && \
+    rm -rf /usr/local/go && \
+    tar -C /usr/local -xzf go${GO_VERSION}.linux-${GOARCH}.tar.gz && \
+    rm go${GO_VERSION}.linux-${GOARCH}.tar.gz
+
+# Set Go environment
 ENV PATH="/usr/local/go/bin:${PATH}"
-
-# Set Go workspace directory for user root
 ENV GOPATH=/root/go
 ENV PATH="${GOPATH}/bin:${PATH}"
 
-# Install gowitness using go install
+# Install gowitness
 RUN go install github.com/sensepost/gowitness@latest
 
-
-# Install chromium (headless chrome)
-RUN apt-get update && apt-get install -y chromium
-
-# Optional: symlink chromium to google-chrome
+# Chromium path symlink
 RUN ln -s /usr/bin/chromium /usr/bin/google-chrome
- 
+
+# Set timezone
 ENV TZ=Africa/Johannesburg
-RUN apt-get update && apt-get install -y tzdata && \
-    ln -fs /usr/share/zoneinfo/Africa/Johannesburg /etc/localtime && \
+RUN ln -fs /usr/share/zoneinfo/Africa/Johannesburg /etc/localtime && \
     dpkg-reconfigure -f noninteractive tzdata
 
-# Create app directory
+# Set app directory
 WORKDIR /usr/src/app
 
-# Copy package files and install dependencies
+# Install dependencies
 COPY package*.json ./
 RUN npm install --production
 
-# Copy all app files
+# Copy app source
 COPY . .
 
-# Expose your app port
 EXPOSE 3000
 
-# Start your app
 CMD ["node", "webui.js"]
 
